@@ -8,6 +8,8 @@ pipeline {
     
     environment {
         SONAR_SERVER = 'SonarQube'
+        // Use Jenkins' withCredentials to securely handle the SonarQube token
+        SONAR_CREDS = credentials('sonarqube-token')
     }
     
     stages {
@@ -34,15 +36,17 @@ pipeline {
         
         stage('SonarQube Analysis Dev') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                        mvn sonar:sonar \
-                        -Dsonar.projectKey=NumberGuessGame \
-                        -Dsonar.projectName='Number Guess Game' \
-                        -Dsonar.host.url=http://localhost:9000 \
-                        -Dsonar.login=${SONAR_TOKEN} \
-                        -Dsonar.java.binaries=target/classes
-                    """
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            mvn sonar:sonar \
+                            -Dsonar.projectKey=NumberGuessGame \
+                            -Dsonar.projectName='Number Guess Game' \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.java.binaries=target/classes
+                        """
+                    }
                 }
             }
         }
@@ -93,13 +97,16 @@ pipeline {
         
         stage('SonarQube Analysis Feature') {
             steps {
-                withSonarQubeEnv(SONAR_SERVER) {
-                    sh """
-                    mvn sonar:sonar \
-                      -Dsonar.projectKey=${env.APP_NAME} \
-                      -Dsonar.projectName='${env.APP_NAME}' \
-                      -Dsonar.branch.name=feature
-                    """
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv(SONAR_SERVER) {
+                        sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=${env.APP_NAME} \
+                          -Dsonar.projectName='${env.APP_NAME}' \
+                          -Dsonar.branch.name=feature \
+                          -Dsonar.login=${SONAR_TOKEN}
+                        """
+                    }
                 }
             }
         }
@@ -150,13 +157,16 @@ pipeline {
         
         stage('SonarQube Analysis Main') {
             steps {
-                withSonarQubeEnv(SONAR_SERVER) {
-                    sh """
-                    mvn sonar:sonar \
-                      -Dsonar.projectKey=${env.APP_NAME} \
-                      -Dsonar.projectName='${env.APP_NAME}' \
-                      -Dsonar.branch.name=main
-                    """
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv(SONAR_SERVER) {
+                        sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=${env.APP_NAME} \
+                          -Dsonar.projectName='${env.APP_NAME}' \
+                          -Dsonar.branch.name=main \
+                          -Dsonar.login=${SONAR_TOKEN}
+                        """
+                    }
                 }
             }
         }
