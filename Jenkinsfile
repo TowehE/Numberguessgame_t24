@@ -9,7 +9,7 @@ pipeline {
     environment {
         // For a demo project, we'll use the local environment
         TOMCAT_TEST_PORT = '8081'
-        TOMCAT_PROD_PORT = '8080'
+        TOMCAT_PROD_PORT = '8082'
         WAR_FILE = 'NumberGuessGame-1.0-SNAPSHOT.war'
     }
     
