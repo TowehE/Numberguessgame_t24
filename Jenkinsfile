@@ -208,7 +208,7 @@ pipeline {
                 </ul>""",
                 to: "${EMAIL_RECIPIENT}",
                 mimeType: 'text/html',
-                debug: true
+              
             )
         }
         failure {
@@ -222,8 +222,7 @@ pipeline {
                 <p>Build URL: ${env.BUILD_URL}</p>
                 <p>Check console output for detailed information about the failure.</p>""",
                 to: "${EMAIL_RECIPIENT}",
-                mimeType: 'text/html',
-                  debug: true
+                mimeType: 'text/html'
             )
         }
         always {
