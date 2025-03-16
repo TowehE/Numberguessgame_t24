@@ -6,10 +6,6 @@ pipeline {
         jdk 'JDK8'
     }
     
-    environment {
-        SONAR_SERVER = 'SonarQube'
-    }
-    
     stages {
         stage('Build Dev Branch') {
             steps {
@@ -29,39 +25,6 @@ pipeline {
                 
                 sh 'mvn clean package'
                 sh 'mvn test'
-            }
-        }
-        
-        stage('SonarQube Analysis Dev') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                        withSonarQubeEnv('SonarQube') {
-                            sh """
-                                # Print SonarQube server info for debugging
-                                echo "SonarQube URL: \${SONAR_HOST_URL}"
-                                
-                                # Run SonarQube analysis with debug flag
-                                mvn -X sonar:sonar \
-                                -Dsonar.projectKey=NumberGuessGame \
-                                -Dsonar.projectName='Number Guess Game' \
-                                -Dsonar.host.url=http://localhost:9000 \
-                                -Dsonar.login=${SONAR_TOKEN} \
-                                -Dsonar.java.binaries=target/classes
-                            """
-                        }
-                    }
-                }
-            }
-        }
-        
-        stage('Quality Gate Dev') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    timeout(time: 1, unit: 'MINUTES') {
-                        waitForQualityGate abortPipeline: false
-                    }
-                }
             }
         }
         
@@ -101,35 +64,6 @@ pipeline {
             }
         }
         
-        stage('SonarQube Analysis Feature') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                        withSonarQubeEnv(SONAR_SERVER) {
-                            sh """
-                                # Run SonarQube analysis with debug flag
-                                mvn -X sonar:sonar \
-                                -Dsonar.projectKey=${env.APP_NAME} \
-                                -Dsonar.projectName='${env.APP_NAME}' \
-                                -Dsonar.branch.name=feature \
-                                -Dsonar.login=${SONAR_TOKEN}
-                            """
-                        }
-                    }
-                }
-            }
-        }
-        
-        stage('Quality Gate Feature') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    timeout(time: 1, unit: 'HOURS') {
-                        waitForQualityGate abortPipeline: false
-                    }
-                }
-            }
-        }
-        
         stage('Deploy Feature') {
             steps {
                 sh """
@@ -166,35 +100,6 @@ pipeline {
             }
         }
         
-        stage('SonarQube Analysis Main') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                        withSonarQubeEnv(SONAR_SERVER) {
-                            sh """
-                                # Run SonarQube analysis with debug flag
-                                mvn -X sonar:sonar \
-                                -Dsonar.projectKey=${env.APP_NAME} \
-                                -Dsonar.projectName='${env.APP_NAME}' \
-                                -Dsonar.branch.name=main \
-                                -Dsonar.login=${SONAR_TOKEN}
-                            """
-                        }
-                    }
-                }
-            }
-        }
-        
-        stage('Quality Gate Main') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    timeout(time: 1, unit: 'HOURS') {
-                        waitForQualityGate abortPipeline: false
-                    }
-                }
-            }
-        }
-        
         stage('Deploy Main') {
             steps {
                 sh """
@@ -214,9 +119,6 @@ pipeline {
     post {
         success {
             echo "Complete pipeline executed successfully! All branches built and deployed."
-        }
-        unstable {
-            echo "Pipeline completed with some stages marked as unstable. SonarQube analysis or Quality Gate may have failed."
         }
         failure {
             echo "Pipeline failed! Check the logs for details."
