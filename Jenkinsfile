@@ -55,18 +55,21 @@ pipeline {
         }
         
         stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
-            steps {
-                echo 'Deploying to production environment from main branch...'
-                sh """
-                    docker stop numbergame-prod || true
-                    docker rm numbergame-prod || true
-                    docker run -d -p ${TOMCAT_PROD_PORT}:8080 --name numbergame-prod -v \${WORKSPACE}/target/${WAR_FILE}:/usr/local/tomcat/webapps/numbergame.war tomcat:9-jre8
-                """
+        when {
+            expression {
+                echo "Evaluating production deployment for branch: ${env.BRANCH_NAME}"
+                return env.BRANCH_NAME == 'main'
             }
         }
+        steps {
+            echo 'Deploying to production environment from main branch...'
+            sh """
+                docker stop numbergame-prod || true
+                docker rm numbergame-prod || true
+                docker run -d -p ${TOMCAT_PROD_PORT}:8080 --name numbergame-prod -v \${WORKSPACE}/target/${WAR_FILE}:/usr/local/tomcat/webapps/numbergame.war tomcat:9-jre8
+            """
+        }
+    }
         
         stage('Verify Deployment') {
             steps {
