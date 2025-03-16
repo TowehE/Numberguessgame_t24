@@ -58,7 +58,7 @@ pipeline {
             steps {
                 echo "Dev branch successful, continuing with Feature branch"
                 checkout([$class: 'GitSCM', branches: [[name: '*/feature']], 
-                          userRemoteConfigs: [[url: 'YOUR_GIT_REPO_URL']]])
+                         userRemoteConfigs: [[url: 'https://github.com/TowehE/Numberguessgame_t24.git']]
                 
                 script {
                     def pom = readMavenPom file: 'pom.xml'
