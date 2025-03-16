@@ -7,7 +7,6 @@ pipeline {
     }
     
     environment {
-        // For a demo project, we'll use the local environment
         TOMCAT_TEST_PORT = '8081'
         TOMCAT_PROD_PORT = '8082'
         WAR_FILE = 'NumberGuessGame-1.0-SNAPSHOT.war'
@@ -42,12 +41,11 @@ pipeline {
         stage('Deploy to Testing') {
             when {
                 expression { 
-                    return env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'dev'
+                    return env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'dev'
                 }
             }
             steps {
-                echo 'Deploying to test environment...'
-                // Create a Docker container for testing
+                echo "Deploying to test environment from ${env.BRANCH_NAME} branch..."
                 sh """
                     docker stop numbergame-test || true
                     docker rm numbergame-test || true
@@ -58,11 +56,10 @@ pipeline {
         
         stage('Deploy to Production') {
             when {
-                branch 'main'  // Deploy only from main branch
+                branch 'main'
             }
             steps {
                 echo 'Deploying to production environment from main branch...'
-                // Create a Docker container for production
                 sh """
                     docker stop numbergame-prod || true
                     docker rm numbergame-prod || true
@@ -75,14 +72,30 @@ pipeline {
             steps {
                 script {
                     // Wait for Tomcat to deploy the application
-                    sh 'sleep 20'
+                    sh 'sleep 30'
                     
-                    if (env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'main') {
+                    if (env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'dev') {
                         echo "Verifying test deployment (branch: ${env.BRANCH_NAME})"
-                        sh "curl -s http://localhost:${TOMCAT_TEST_PORT}/numbergame/ || echo 'Application may still be deploying'"
+                        
+                        // Check if the WAR file was properly deployed
+                        sh "docker exec numbergame-test ls -la /usr/local/tomcat/webapps/"
+                        
+                        // Check Tomcat logs for deployment information
+                        sh "docker logs numbergame-test | grep -i 'numbergame.war' || echo 'No deployment info in logs'"
+                        
+                        // Check if the application is responding
+                        sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://localhost:${TOMCAT_TEST_PORT}/numbergame/ || echo 'Application may still be deploying'"
                     } else if (env.BRANCH_NAME == 'main') {
                         echo "Verifying production deployment from main branch"
-                        sh "curl -s http://localhost:${TOMCAT_PROD_PORT}/numbergame/ || echo 'Application may still be deploying'"
+                        
+                        // Check if the WAR file was properly deployed
+                        sh "docker exec numbergame-prod ls -la /usr/local/tomcat/webapps/"
+                        
+                        // Check Tomcat logs for deployment information
+                        sh "docker logs numbergame-prod | grep -i 'numbergame.war' || echo 'No deployment info in logs'"
+                        
+                        // Check if the application is responding
+                        sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://localhost:${TOMCAT_PROD_PORT}/numbergame/ || echo 'Application may still be deploying'"
                     }
                 }
                 echo 'Deployment verification completed!'
