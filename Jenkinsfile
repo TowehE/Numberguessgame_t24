@@ -6,12 +6,13 @@ pipeline {
         jdk 'JDK8'
     }
     
- environment {
-    TOMCAT_HOST = 'localhost'
-    TOMCAT_PORT = '8080'
-    TOMCAT_CREDS = credentials('tomcat-deployer')
-    TOMCAT_WEBAPPS = '/home/ec2-user/apache-tomcat-7.0.94/webapps'  // Updated path
-}
+    environment {
+        TOMCAT_HOST = 'localhost'
+        TOMCAT_PORT = '8080'
+        TOMCAT_CREDS = credentials('tomcat-deployer')
+        TOMCAT_WEBAPPS = '/home/ec2-user/apache-tomcat-7.0.94/webapps'  // Updated path
+        EMAIL_RECIPIENT = 'toweh02@gmail.com'
+    }
     
     stages {
         stage('Build Dev Branch') {
@@ -27,7 +28,7 @@ pipeline {
                     env.APP_NAME = pom.artifactId
                     env.APP_VERSION = pom.version
                     env.WAR_FILE = "${pom.artifactId}-${pom.version}.war"
-                   env.DEV_CONTEXT_PATH = "${pom.artifactId}-dev"
+                    env.DEV_CONTEXT_PATH = "${pom.artifactId}-dev"
                 }
                 
                 sh 'mvn clean package'
@@ -141,7 +142,7 @@ pipeline {
                     env.APP_NAME = pom.artifactId
                     env.APP_VERSION = pom.version
                     env.WAR_FILE = "${pom.artifactId}-${pom.version}.war"
-                   env.PROD_CONTEXT_PATH = pom.artifactId // Production uses the base name
+                    env.PROD_CONTEXT_PATH = pom.artifactId // Production uses the base name
                 }
                 
                 sh 'mvn clean package'
@@ -192,9 +193,36 @@ pipeline {
             echo "Dev URL: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/"
             echo "Feature URL: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/"
             echo "Production URL: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/"
+            
+            emailext (
+                subject: "SUCCESS: Jenkins Pipeline '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                body: """<p>Build Status: SUCCESS</p>
+                <p>Job Name: ${env.JOB_NAME}</p>
+                <p>Build Number: ${env.BUILD_NUMBER}</p>
+                <p>Build URL: ${env.BUILD_URL}</p>
+                <p>Deployment URLs:</p>
+                <ul>
+                    <li>Dev: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/</li>
+                    <li>Feature: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/</li>
+                    <li>Production: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/</li>
+                </ul>""",
+                to: "${EMAIL_RECIPIENT}",
+                mimeType: 'text/html'
+            )
         }
         failure {
             echo "Pipeline failed! Check the logs for details."
+            
+            emailext (
+                subject: "FAILED: Jenkins Pipeline '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                body: """<p>Build Status: FAILED</p>
+                <p>Job Name: ${env.JOB_NAME}</p>
+                <p>Build Number: ${env.BUILD_NUMBER}</p>
+                <p>Build URL: ${env.BUILD_URL}</p>
+                <p>Check console output for detailed information about the failure.</p>""",
+                to: "${EMAIL_RECIPIENT}",
+                mimeType: 'text/html'
+            )
         }
         always {
             cleanWs()
