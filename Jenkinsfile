@@ -10,6 +10,8 @@ pipeline {
         TOMCAT_HOST = 'localhost'
         TOMCAT_PORT = '8080'
         TOMCAT_CREDS = credentials('tomcat-deployer')
+        // Define the correct Tomcat webapps directory
+        TOMCAT_WEBAPPS = '/home/ec2-user/tomcat/webapps'
     }
     
     stages {
@@ -37,12 +39,8 @@ pipeline {
         stage('Deploy Dev') {
             steps {
                 script {
-                    // Deploy to Tomcat with -dev context path
-                    sh """
-                        curl -v -u ${TOMCAT_CREDS} \
-                        -T target/${WAR_FILE} \
-                        "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${DEV_CONTEXT_PATH}&update=true"
-                    """
+                    // Direct deployment to the correct Tomcat webapps directory
+                    sh "cp target/${WAR_FILE} ${TOMCAT_WEBAPPS}/${DEV_CONTEXT_PATH}.war"
                     
                     echo "Dev application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/"
                     
@@ -76,12 +74,8 @@ pipeline {
         stage('Deploy Feature') {
             steps {
                 script {
-                    // Deploy to Tomcat with -feature context path
-                    sh """
-                        curl -v -u ${TOMCAT_CREDS} \
-                        -T target/${WAR_FILE} \
-                        "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${FEATURE_CONTEXT_PATH}&update=true"
-                    """
+                    // Direct deployment to the correct Tomcat webapps directory
+                    sh "cp target/${WAR_FILE} ${TOMCAT_WEBAPPS}/${FEATURE_CONTEXT_PATH}.war"
                     
                     echo "Feature application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/"
                     
@@ -115,12 +109,8 @@ pipeline {
         stage('Deploy Main') {
             steps {
                 script {
-                    // Deploy to Tomcat with main context path
-                    sh """
-                        curl -v -u ${TOMCAT_CREDS} \
-                        -T target/${WAR_FILE} \
-                        "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${PROD_CONTEXT_PATH}&update=true"
-                    """
+                    // Direct deployment to the correct Tomcat webapps directory
+                    sh "cp target/${WAR_FILE} ${TOMCAT_WEBAPPS}/${PROD_CONTEXT_PATH}.war"
                     
                     echo "Production application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/"
                     
