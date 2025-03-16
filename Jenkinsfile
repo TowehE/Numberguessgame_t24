@@ -42,7 +42,7 @@ pipeline {
         stage('Deploy to Testing') {
             when {
                 expression { 
-                    return env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'develop'
+                    return env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'dev'
                 }
             }
             steps {
@@ -77,7 +77,7 @@ pipeline {
                     // Wait for Tomcat to deploy the application
                     sh 'sleep 20'
                     
-                    if (env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'develop') {
+                    if (env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'main') {
                         echo "Verifying test deployment (branch: ${env.BRANCH_NAME})"
                         sh "curl -s http://localhost:${TOMCAT_TEST_PORT}/numbergame/ || echo 'Application may still be deploying'"
                     } else if (env.BRANCH_NAME == 'main') {
