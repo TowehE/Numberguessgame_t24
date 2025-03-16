@@ -29,30 +29,34 @@ pipeline {
                 
                 sh 'mvn clean package'
                 sh 'mvn test'
-                
-                           stage('SonarQube Analysis') {
-                steps {
-                    withSonarQubeEnv('SonarQube') {
-                        sh """
-                            mvn sonar:sonar \
-                            -Dsonar.projectKey=NumberGuessGame \
-                            -Dsonar.projectName='Number Guess Game' \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.login=${SONAR_TOKEN} \
-                            -Dsonar.java.binaries=target/classes
-                        """
-                    }
+            }
+        }
+        
+        stage('SonarQube Analysis Dev') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=NumberGuessGame \
+                        -Dsonar.projectName='Number Guess Game' \
+                        -Dsonar.host.url=http://localhost:9000 \
+                        -Dsonar.login=${SONAR_TOKEN} \
+                        -Dsonar.java.binaries=target/classes
+                    """
                 }
             }
-            
-            stage('Quality Gate') {
-                steps {
-                    timeout(time: 1, unit: 'MINUTES') {
-                        waitForQualityGate abortPipeline: true
-                    }
+        }
+        
+        stage('Quality Gate Dev') {
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
-                
+        }
+        
+        stage('Deploy Dev') {
+            steps {
                 sh """
                     docker stop numbergame-dev || true
                     docker rm numbergame-dev || true
@@ -84,7 +88,11 @@ pipeline {
                 
                 sh 'mvn clean package'
                 sh 'mvn test'
-                
+            }
+        }
+        
+        stage('SonarQube Analysis Feature') {
+            steps {
                 withSonarQubeEnv(SONAR_SERVER) {
                     sh """
                     mvn sonar:sonar \
@@ -93,11 +101,19 @@ pipeline {
                       -Dsonar.branch.name=feature
                     """
                 }
-                
+            }
+        }
+        
+        stage('Quality Gate Feature') {
+            steps {
                 timeout(time: 1, unit: 'HOURS') {
                     waitForQualityGate abortPipeline: true
                 }
-                
+            }
+        }
+        
+        stage('Deploy Feature') {
+            steps {
                 sh """
                     docker stop numbergame-feature || true
                     docker rm numbergame-feature || true
@@ -129,7 +145,11 @@ pipeline {
                 
                 sh 'mvn clean package'
                 sh 'mvn test'
-                
+            }
+        }
+        
+        stage('SonarQube Analysis Main') {
+            steps {
                 withSonarQubeEnv(SONAR_SERVER) {
                     sh """
                     mvn sonar:sonar \
@@ -138,11 +158,19 @@ pipeline {
                       -Dsonar.branch.name=main
                     """
                 }
-                
+            }
+        }
+        
+        stage('Quality Gate Main') {
+            steps {
                 timeout(time: 1, unit: 'HOURS') {
                     waitForQualityGate abortPipeline: true
                 }
-                
+            }
+        }
+        
+        stage('Deploy Main') {
+            steps {
                 sh """
                     docker stop numbergame-prod || true
                     docker rm numbergame-prod || true
