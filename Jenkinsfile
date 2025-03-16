@@ -1,5 +1,9 @@
 pipeline {
     agent any
+
+triggers {
+        githubPush()  // This enables auto-build on push
+    }
     
     tools {
         maven 'Maven'
