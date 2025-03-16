@@ -207,7 +207,8 @@ pipeline {
                     <li>Production: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/</li>
                 </ul>""",
                 to: "${EMAIL_RECIPIENT}",
-                mimeType: 'text/html'
+                mimeType: 'text/html',
+                  debug: true
             )
         }
         failure {
@@ -222,6 +223,7 @@ pipeline {
                 <p>Check console output for detailed information about the failure.</p>""",
                 to: "${EMAIL_RECIPIENT}",
                 mimeType: 'text/html'
+                  debug: true
             )
         }
         always {
