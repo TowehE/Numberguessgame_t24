@@ -9,8 +9,7 @@ pipeline {
     environment {
         TOMCAT_HOST = 'localhost'
         TOMCAT_PORT = '8080'
-        TOMCAT_USER = 'ec2-user'
-        TOMCAT_SERVER_CREDS = credentials('tomcat-server-ssh')
+        TOMCAT_CREDS = credentials('tomcat-deployer')
         TOMCAT_WEBAPPS = '/home/ec2-user/tomcat/webapps'
     }
     
@@ -39,21 +38,33 @@ pipeline {
         stage('Deploy Dev') {
             steps {
                 script {
-                    // Store the WAR file temporarily
-                    sh "mkdir -p /tmp/deployments"
-                    sh "cp target/${WAR_FILE} /tmp/deployments/${DEV_CONTEXT_PATH}.war"
+                    // Create a deployment script
+                    writeFile file: 'deploy_dev.sh', text: """#!/bin/bash
+                    # Create temporary directory
+                    mkdir -p /tmp/deploy
                     
-                    // Use SSH to deploy with proper permissions
-                    sshagent(['tomcat-server-ssh']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${TOMCAT_USER}@${TOMCAT_HOST} "sudo mkdir -p ${TOMCAT_WEBAPPS}"
-                            scp -o StrictHostKeyChecking=no /tmp/deployments/${DEV_CONTEXT_PATH}.war ${TOMCAT_USER}@${TOMCAT_HOST}:/tmp/
-                            ssh -o StrictHostKeyChecking=no ${TOMCAT_USER}@${TOMCAT_HOST} "sudo cp /tmp/${DEV_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/ && sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${DEV_CONTEXT_PATH}.war"
-                        """
-                    }
+                    # Copy WAR file to temp directory
+                    cp target/${WAR_FILE} /tmp/deploy/${DEV_CONTEXT_PATH}.war
+                    
+                    # Try to copy directly first
+                    if [ -w "${TOMCAT_WEBAPPS}" ]; then
+                        cp /tmp/deploy/${DEV_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
+                        echo "Direct copy successful"
+                    else
+                        # If direct copy fails, try using sudo
+                        sudo cp /tmp/deploy/${DEV_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
+                        sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${DEV_CONTEXT_PATH}.war
+                        echo "Used sudo to copy"
+                    fi
+                    """
+                    
+                    // Make script executable
+                    sh 'chmod +x deploy_dev.sh'
+                    
+                    // Execute deployment script
+                    sh './deploy_dev.sh'
                     
                     echo "Dev application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/"
-                    
                     sh "sleep 10"
                     sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/ || echo 'Application may still be deploying'"
                 }
@@ -84,20 +95,33 @@ pipeline {
         stage('Deploy Feature') {
             steps {
                 script {
-                    // Store the WAR file temporarily
-                    sh "mkdir -p /tmp/deployments"
-                    sh "cp target/${WAR_FILE} /tmp/deployments/${FEATURE_CONTEXT_PATH}.war"
+                    // Create a deployment script
+                    writeFile file: 'deploy_feature.sh', text: """#!/bin/bash
+                    # Create temporary directory
+                    mkdir -p /tmp/deploy
                     
-                    // Use SSH to deploy with proper permissions
-                    sshagent(['tomcat-server-ssh']) {
-                        sh """
-                            scp -o StrictHostKeyChecking=no /tmp/deployments/${FEATURE_CONTEXT_PATH}.war ${TOMCAT_USER}@${TOMCAT_HOST}:/tmp/
-                            ssh -o StrictHostKeyChecking=no ${TOMCAT_USER}@${TOMCAT_HOST} "sudo cp /tmp/${FEATURE_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/ && sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${FEATURE_CONTEXT_PATH}.war"
-                        """
-                    }
+                    # Copy WAR file to temp directory
+                    cp target/${WAR_FILE} /tmp/deploy/${FEATURE_CONTEXT_PATH}.war
+                    
+                    # Try to copy directly first
+                    if [ -w "${TOMCAT_WEBAPPS}" ]; then
+                        cp /tmp/deploy/${FEATURE_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
+                        echo "Direct copy successful"
+                    else
+                        # If direct copy fails, try using sudo
+                        sudo cp /tmp/deploy/${FEATURE_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
+                        sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${FEATURE_CONTEXT_PATH}.war
+                        echo "Used sudo to copy"
+                    fi
+                    """
+                    
+                    // Make script executable
+                    sh 'chmod +x deploy_feature.sh'
+                    
+                    // Execute deployment script
+                    sh './deploy_feature.sh'
                     
                     echo "Feature application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/"
-                    
                     sh "sleep 10"
                     sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/ || echo 'Application may still be deploying'"
                 }
@@ -128,20 +152,33 @@ pipeline {
         stage('Deploy Main') {
             steps {
                 script {
-                    // Store the WAR file temporarily
-                    sh "mkdir -p /tmp/deployments"
-                    sh "cp target/${WAR_FILE} /tmp/deployments/${PROD_CONTEXT_PATH}.war"
+                    // Create a deployment script
+                    writeFile file: 'deploy_main.sh', text: """#!/bin/bash
+                    # Create temporary directory
+                    mkdir -p /tmp/deploy
                     
-                    // Use SSH to deploy with proper permissions
-                    sshagent(['tomcat-server-ssh']) {
-                        sh """
-                            scp -o StrictHostKeyChecking=no /tmp/deployments/${PROD_CONTEXT_PATH}.war ${TOMCAT_USER}@${TOMCAT_HOST}:/tmp/
-                            ssh -o StrictHostKeyChecking=no ${TOMCAT_USER}@${TOMCAT_HOST} "sudo cp /tmp/${PROD_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/ && sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${PROD_CONTEXT_PATH}.war"
-                        """
-                    }
+                    # Copy WAR file to temp directory
+                    cp target/${WAR_FILE} /tmp/deploy/${PROD_CONTEXT_PATH}.war
+                    
+                    # Try to copy directly first
+                    if [ -w "${TOMCAT_WEBAPPS}" ]; then
+                        cp /tmp/deploy/${PROD_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
+                        echo "Direct copy successful"
+                    else
+                        # If direct copy fails, try using sudo
+                        sudo cp /tmp/deploy/${PROD_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
+                        sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${PROD_CONTEXT_PATH}.war
+                        echo "Used sudo to copy"
+                    fi
+                    """
+                    
+                    // Make script executable
+                    sh 'chmod +x deploy_main.sh'
+                    
+                    // Execute deployment script
+                    sh './deploy_main.sh'
                     
                     echo "Production application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/"
-                    
                     sh "sleep 10"
                     sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/ || echo 'Application may still be deploying'"
                 }
@@ -161,7 +198,7 @@ pipeline {
         }
         always {
             cleanWs()
-            sh "rm -rf /tmp/deployments || true"
+            sh "rm -rf /tmp/deploy || true"
         }
     }
 }
