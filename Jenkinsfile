@@ -6,12 +6,12 @@ pipeline {
         jdk 'JDK8'
     }
     
-    environment {
-        TOMCAT_HOST = 'localhost'
-        TOMCAT_PORT = '8080'
-        TOMCAT_CREDS = credentials('tomcat-deployer')
-        TOMCAT_WEBAPPS = '/home/ec2-user/tomcat/webapps'
-    }
+ environment {
+    TOMCAT_HOST = 'localhost'
+    TOMCAT_PORT = '8080'
+    TOMCAT_CREDS = credentials('tomcat-deployer')
+    TOMCAT_WEBAPPS = '/home/ec2-user/apache-tomcat-7.0.94/webapps'  // Updated path
+}
     
     stages {
         stage('Build Dev Branch') {
