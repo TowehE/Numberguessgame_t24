@@ -27,7 +27,7 @@ pipeline {
                     env.APP_NAME = pom.artifactId
                     env.APP_VERSION = pom.version
                     env.WAR_FILE = "${pom.artifactId}-${pom.version}.war"
-                    env.DEV_CONTEXT_PATH = "${pom.artifactId.toLowerCase()}-dev"
+                   env.DEV_CONTEXT_PATH = "${pom.artifactId}-dev"
                 }
                 
                 sh 'mvn clean package'
@@ -84,7 +84,7 @@ pipeline {
                     env.APP_NAME = pom.artifactId
                     env.APP_VERSION = pom.version
                     env.WAR_FILE = "${pom.artifactId}-${pom.version}.war"
-                    env.FEATURE_CONTEXT_PATH = "${pom.artifactId.toLowerCase()}-feature"
+                    env.FEATURE_CONTEXT_PATH = "${pom.artifactId}-feature"
                 }
                 
                 sh 'mvn clean package'
@@ -141,7 +141,7 @@ pipeline {
                     env.APP_NAME = pom.artifactId
                     env.APP_VERSION = pom.version
                     env.WAR_FILE = "${pom.artifactId}-${pom.version}.war"
-                    env.PROD_CONTEXT_PATH = pom.artifactId.toLowerCase()  // Production uses the base name
+                   env.PROD_CONTEXT_PATH = pom.artifactId // Production uses the base name
                 }
                 
                 sh 'mvn clean package'
