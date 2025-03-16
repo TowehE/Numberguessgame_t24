@@ -15,7 +15,7 @@ pipeline {
             steps {
                 echo "Starting build flow with Dev branch"
                 checkout([$class: 'GitSCM', branches: [[name: '*/dev']], 
-                          userRemoteConfigs: [[url: 'YOUR_GIT_REPO_URL']]])
+                          userRemoteConfigs: [[url: 'https://github.com/TowehE/Numberguessgame_t24.git']]
                 
                 script {
                     def pom = readMavenPom file: 'pom.xml'
@@ -101,7 +101,7 @@ pipeline {
             steps {
                 echo "Feature branch successful, continuing with Main branch (Production)"
                 checkout([$class: 'GitSCM', branches: [[name: '*/main']], 
-                          userRemoteConfigs: [[url: 'YOUR_GIT_REPO_URL']]])
+                         userRemoteConfigs: [[url: 'https://github.com/TowehE/Numberguessgame_t24.git']]
                 
                 script {
                     def pom = readMavenPom file: 'pom.xml'
