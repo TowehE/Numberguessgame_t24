@@ -11,7 +11,7 @@ pipeline {
         TOMCAT_PORT = '8080'
         TOMCAT_CREDS = credentials('tomcat-deployer')
         TOMCAT_WEBAPPS = '/home/ec2-user/apache-tomcat-7.0.94/webapps'  // Updated path
-        EMAIL_RECIPIENT = 'toweh02@gmail.com'
+        EMAIL_RECIPIENT = 'toweh05@gmail.com'
     }
     
     stages {
