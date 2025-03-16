@@ -14,8 +14,10 @@ pipeline {
         stage('Build Dev Branch') {
             steps {
                 echo "Starting build flow with Dev branch"
-                checkout([$class: 'GitSCM', branches: [[name: '*/dev']], 
+                checkout([$class: 'GitSCM', 
+                          branches: [[name: '*/dev']], 
                           userRemoteConfigs: [[url: 'https://github.com/TowehE/Numberguessgame_t24.git']]
+                ])
                 
                 script {
                     def pom = readMavenPom file: 'pom.xml'
@@ -57,8 +59,10 @@ pipeline {
         stage('Build Feature Branch') {
             steps {
                 echo "Dev branch successful, continuing with Feature branch"
-                checkout([$class: 'GitSCM', branches: [[name: '*/feature']], 
+                checkout([$class: 'GitSCM', 
+                         branches: [[name: '*/feature']], 
                          userRemoteConfigs: [[url: 'https://github.com/TowehE/Numberguessgame_t24.git']]
+                ])
                 
                 script {
                     def pom = readMavenPom file: 'pom.xml'
@@ -100,8 +104,10 @@ pipeline {
         stage('Build Main Branch') {
             steps {
                 echo "Feature branch successful, continuing with Main branch (Production)"
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], 
+                checkout([$class: 'GitSCM', 
+                         branches: [[name: '*/main']], 
                          userRemoteConfigs: [[url: 'https://github.com/TowehE/Numberguessgame_t24.git']]
+                ])
                 
                 script {
                     def pom = readMavenPom file: 'pom.xml'
