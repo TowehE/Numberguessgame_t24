@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
     
@@ -30,18 +31,28 @@ pipeline {
                 sh 'mvn clean package'
                 sh 'mvn test'
                 
-                withSonarQubeEnv(SONAR_SERVER) {
-                    sh """
-                    mvn sonar:sonar \
-                      -Dsonar.projectKey=${env.APP_NAME} \
-                      -Dsonar.projectName='${env.APP_NAME}' \
-                      -Dsonar.branch.name=dev
-                    """
+                           stage('SonarQube Analysis') {
+                steps {
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            mvn sonar:sonar \
+                            -Dsonar.projectKey=NumberGuessGame \
+                            -Dsonar.projectName='Number Guess Game' \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.java.binaries=target/classes
+                        """
+                    }
                 }
-                
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+            }
+            
+            stage('Quality Gate') {
+                steps {
+                    timeout(time: 1, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true
+                    }
                 }
+            }
                 
                 sh """
                     docker stop numbergame-dev || true
