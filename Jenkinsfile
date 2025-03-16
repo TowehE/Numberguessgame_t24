@@ -6,6 +6,12 @@ pipeline {
         jdk 'JDK8'
     }
     
+    environment {
+        TOMCAT_HOST = 'localhost'
+        TOMCAT_PORT = '8080'
+        TOMCAT_CREDS = credentials('tomcat-deployer')
+    }
+    
     stages {
         stage('Build Dev Branch') {
             steps {
@@ -20,7 +26,7 @@ pipeline {
                     env.APP_NAME = pom.artifactId
                     env.APP_VERSION = pom.version
                     env.WAR_FILE = "${pom.artifactId}-${pom.version}.war"
-                    env.CONTEXT_PATH = pom.artifactId.toLowerCase()
+                    env.DEV_CONTEXT_PATH = "${pom.artifactId.toLowerCase()}-dev"
                 }
                 
                 sh 'mvn clean package'
@@ -30,16 +36,19 @@ pipeline {
         
         stage('Deploy Dev') {
             steps {
-                sh """
-                    docker stop numbergame-dev || true
-                    docker rm numbergame-dev || true
-                    docker run -d -p 8081:8080 --name numbergame-dev \
-                        -v \${WORKSPACE}/target/${WAR_FILE}:/usr/local/tomcat/webapps/${CONTEXT_PATH}.war \
-                        tomcat:9-jre8
-                """
-                
-                sh "sleep 30"
-                sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://localhost:8081/${CONTEXT_PATH}/ || echo 'Application may still be deploying'"
+                script {
+                    // Deploy to Tomcat with -dev context path
+                    sh """
+                        curl -v -u ${TOMCAT_CREDS} \
+                        -T target/${WAR_FILE} \
+                        "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${DEV_CONTEXT_PATH}&update=true"
+                    """
+                    
+                    echo "Dev application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/"
+                    
+                    sh "sleep 10"
+                    sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/ || echo 'Application may still be deploying'"
+                }
             }
         }
         
@@ -56,7 +65,7 @@ pipeline {
                     env.APP_NAME = pom.artifactId
                     env.APP_VERSION = pom.version
                     env.WAR_FILE = "${pom.artifactId}-${pom.version}.war"
-                    env.CONTEXT_PATH = pom.artifactId.toLowerCase()
+                    env.FEATURE_CONTEXT_PATH = "${pom.artifactId.toLowerCase()}-feature"
                 }
                 
                 sh 'mvn clean package'
@@ -66,16 +75,19 @@ pipeline {
         
         stage('Deploy Feature') {
             steps {
-                sh """
-                    docker stop numbergame-feature || true
-                    docker rm numbergame-feature || true
-                    docker run -d -p 8082:8080 --name numbergame-feature \
-                        -v \${WORKSPACE}/target/${WAR_FILE}:/usr/local/tomcat/webapps/${CONTEXT_PATH}.war \
-                        tomcat:9-jre8
-                """
-                
-                sh "sleep 30"
-                sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://localhost:8082/${CONTEXT_PATH}/ || echo 'Application may still be deploying'"
+                script {
+                    // Deploy to Tomcat with -feature context path
+                    sh """
+                        curl -v -u ${TOMCAT_CREDS} \
+                        -T target/${WAR_FILE} \
+                        "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${FEATURE_CONTEXT_PATH}&update=true"
+                    """
+                    
+                    echo "Feature application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/"
+                    
+                    sh "sleep 10"
+                    sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/ || echo 'Application may still be deploying'"
+                }
             }
         }
         
@@ -92,7 +104,7 @@ pipeline {
                     env.APP_NAME = pom.artifactId
                     env.APP_VERSION = pom.version
                     env.WAR_FILE = "${pom.artifactId}-${pom.version}.war"
-                    env.CONTEXT_PATH = pom.artifactId.toLowerCase()
+                    env.PROD_CONTEXT_PATH = pom.artifactId.toLowerCase()  // Production uses the base name
                 }
                 
                 sh 'mvn clean package'
@@ -102,16 +114,19 @@ pipeline {
         
         stage('Deploy Main') {
             steps {
-                sh """
-                    docker stop numbergame-prod || true
-                    docker rm numbergame-prod || true
-                    docker run -d -p 8083:8080 --name numbergame-prod \
-                        -v \${WORKSPACE}/target/${WAR_FILE}:/usr/local/tomcat/webapps/${CONTEXT_PATH}.war \
-                        tomcat:9-jre8
-                """
-                
-                sh "sleep 30"
-                sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://localhost:8083/${CONTEXT_PATH}/ || echo 'Application may still be deploying'"
+                script {
+                    // Deploy to Tomcat with main context path
+                    sh """
+                        curl -v -u ${TOMCAT_CREDS} \
+                        -T target/${WAR_FILE} \
+                        "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${PROD_CONTEXT_PATH}&update=true"
+                    """
+                    
+                    echo "Production application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/"
+                    
+                    sh "sleep 10"
+                    sh "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\\n' http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/ || echo 'Application may still be deploying'"
+                }
             }
         }
     }
@@ -119,6 +134,9 @@ pipeline {
     post {
         success {
             echo "Complete pipeline executed successfully! All branches built and deployed."
+            echo "Dev URL: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/"
+            echo "Feature URL: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/"
+            echo "Production URL: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/"
         }
         failure {
             echo "Pipeline failed! Check the logs for details."
