@@ -9,8 +9,8 @@ pipeline {
     environment {
         TOMCAT_HOST = 'localhost'
         TOMCAT_PORT = '8080'
-        TOMCAT_CREDS = credentials('tomcat-deployer')
-        // Define the correct Tomcat webapps directory
+        TOMCAT_USER = 'ec2-user'
+        TOMCAT_SERVER_CREDS = credentials('tomcat-server-ssh')
         TOMCAT_WEBAPPS = '/home/ec2-user/tomcat/webapps'
     }
     
@@ -39,8 +39,18 @@ pipeline {
         stage('Deploy Dev') {
             steps {
                 script {
-                    // Direct deployment to the correct Tomcat webapps directory
-                    sh "cp target/${WAR_FILE} ${TOMCAT_WEBAPPS}/${DEV_CONTEXT_PATH}.war"
+                    // Store the WAR file temporarily
+                    sh "mkdir -p /tmp/deployments"
+                    sh "cp target/${WAR_FILE} /tmp/deployments/${DEV_CONTEXT_PATH}.war"
+                    
+                    // Use SSH to deploy with proper permissions
+                    sshagent(['tomcat-server-ssh']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${TOMCAT_USER}@${TOMCAT_HOST} "sudo mkdir -p ${TOMCAT_WEBAPPS}"
+                            scp -o StrictHostKeyChecking=no /tmp/deployments/${DEV_CONTEXT_PATH}.war ${TOMCAT_USER}@${TOMCAT_HOST}:/tmp/
+                            ssh -o StrictHostKeyChecking=no ${TOMCAT_USER}@${TOMCAT_HOST} "sudo cp /tmp/${DEV_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/ && sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${DEV_CONTEXT_PATH}.war"
+                        """
+                    }
                     
                     echo "Dev application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/"
                     
@@ -74,8 +84,17 @@ pipeline {
         stage('Deploy Feature') {
             steps {
                 script {
-                    // Direct deployment to the correct Tomcat webapps directory
-                    sh "cp target/${WAR_FILE} ${TOMCAT_WEBAPPS}/${FEATURE_CONTEXT_PATH}.war"
+                    // Store the WAR file temporarily
+                    sh "mkdir -p /tmp/deployments"
+                    sh "cp target/${WAR_FILE} /tmp/deployments/${FEATURE_CONTEXT_PATH}.war"
+                    
+                    // Use SSH to deploy with proper permissions
+                    sshagent(['tomcat-server-ssh']) {
+                        sh """
+                            scp -o StrictHostKeyChecking=no /tmp/deployments/${FEATURE_CONTEXT_PATH}.war ${TOMCAT_USER}@${TOMCAT_HOST}:/tmp/
+                            ssh -o StrictHostKeyChecking=no ${TOMCAT_USER}@${TOMCAT_HOST} "sudo cp /tmp/${FEATURE_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/ && sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${FEATURE_CONTEXT_PATH}.war"
+                        """
+                    }
                     
                     echo "Feature application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/"
                     
@@ -109,8 +128,17 @@ pipeline {
         stage('Deploy Main') {
             steps {
                 script {
-                    // Direct deployment to the correct Tomcat webapps directory
-                    sh "cp target/${WAR_FILE} ${TOMCAT_WEBAPPS}/${PROD_CONTEXT_PATH}.war"
+                    // Store the WAR file temporarily
+                    sh "mkdir -p /tmp/deployments"
+                    sh "cp target/${WAR_FILE} /tmp/deployments/${PROD_CONTEXT_PATH}.war"
+                    
+                    // Use SSH to deploy with proper permissions
+                    sshagent(['tomcat-server-ssh']) {
+                        sh """
+                            scp -o StrictHostKeyChecking=no /tmp/deployments/${PROD_CONTEXT_PATH}.war ${TOMCAT_USER}@${TOMCAT_HOST}:/tmp/
+                            ssh -o StrictHostKeyChecking=no ${TOMCAT_USER}@${TOMCAT_HOST} "sudo cp /tmp/${PROD_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/ && sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${PROD_CONTEXT_PATH}.war"
+                        """
+                    }
                     
                     echo "Production application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/"
                     
@@ -133,6 +161,7 @@ pipeline {
         }
         always {
             cleanWs()
+            sh "rm -rf /tmp/deployments || true"
         }
     }
 }
