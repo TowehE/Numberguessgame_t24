@@ -13,9 +13,9 @@ pipeline {
         TOMCAT_HOST = 'localhost'
         TOMCAT_PORT = '8080'
         TOMCAT_CREDS = credentials('tomcat-deployer')
-        TOMCAT_WEBAPPS = '/home/ec2-user/apache-tomcat-7.0.94/webapps'  // Updated path
+        TOMCAT_WEBAPPS = '/home/ec2-user/apache-tomcat-7.0.94/webapps'
         EMAIL_RECIPIENT = 'toweh05@gmail.com'
-        SONAR_TOKEN = credentials('sonarqube-token') // Using your credential ID
+        SONAR_TOKEN = credentials('sonarqube-token')
     }
     
     stages {
@@ -57,31 +57,14 @@ pipeline {
         stage('Deploy Dev') {
             steps {
                 script {
-                    // Create a deployment script
-                    writeFile file: 'deploy_dev.sh', text: """#!/bin/bash
-                    # Create temporary directory
-                    mkdir -p /tmp/deploy
+                    echo "Deploying Dev branch to Tomcat"
                     
-                    # Copy WAR file to temp directory
-                    cp target/${WAR_FILE} /tmp/deploy/${DEV_CONTEXT_PATH}.war
-                    
-                    # Try to copy directly first
-                    if [ -w "${TOMCAT_WEBAPPS}" ]; then
-                        cp /tmp/deploy/${DEV_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
-                        echo "Direct copy successful"
-                    else
-                        # If direct copy fails, try using sudo
-                        sudo cp /tmp/deploy/${DEV_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
-                        sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${DEV_CONTEXT_PATH}.war
-                        echo "Used sudo to copy"
-                    fi
+                    // Using Tomcat Manager REST API to deploy
+                    sh """
+                    curl -v -u ${TOMCAT_CREDS_USR}:${TOMCAT_CREDS_PSW} \
+                    -T target/${WAR_FILE} \
+                    "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${DEV_CONTEXT_PATH}&update=true"
                     """
-                    
-                    // Make script executable
-                    sh 'chmod +x deploy_dev.sh'
-                    
-                    // Execute deployment script
-                    sh './deploy_dev.sh'
                     
                     echo "Dev application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/"
                     sh "sleep 10"
@@ -128,31 +111,14 @@ pipeline {
         stage('Deploy Feature') {
             steps {
                 script {
-                    // Create a deployment script
-                    writeFile file: 'deploy_feature.sh', text: """#!/bin/bash
-                    # Create temporary directory
-                    mkdir -p /tmp/deploy
+                    echo "Deploying Feature branch to Tomcat"
                     
-                    # Copy WAR file to temp directory
-                    cp target/${WAR_FILE} /tmp/deploy/${FEATURE_CONTEXT_PATH}.war
-                    
-                    # Try to copy directly first
-                    if [ -w "${TOMCAT_WEBAPPS}" ]; then
-                        cp /tmp/deploy/${FEATURE_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
-                        echo "Direct copy successful"
-                    else
-                        # If direct copy fails, try using sudo
-                        sudo cp /tmp/deploy/${FEATURE_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
-                        sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${FEATURE_CONTEXT_PATH}.war
-                        echo "Used sudo to copy"
-                    fi
+                    // Using Tomcat Manager REST API to deploy
+                    sh """
+                    curl -v -u ${TOMCAT_CREDS_USR}:${TOMCAT_CREDS_PSW} \
+                    -T target/${WAR_FILE} \
+                    "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${FEATURE_CONTEXT_PATH}&update=true"
                     """
-                    
-                    // Make script executable
-                    sh 'chmod +x deploy_feature.sh'
-                    
-                    // Execute deployment script
-                    sh './deploy_feature.sh'
                     
                     echo "Feature application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/"
                     sh "sleep 10"
@@ -199,31 +165,14 @@ pipeline {
         stage('Deploy Main') {
             steps {
                 script {
-                    // Create a deployment script
-                    writeFile file: 'deploy_main.sh', text: """#!/bin/bash
-                    # Create temporary directory
-                    mkdir -p /tmp/deploy
+                    echo "Deploying Main branch to Tomcat"
                     
-                    # Copy WAR file to temp directory
-                    cp target/${WAR_FILE} /tmp/deploy/${PROD_CONTEXT_PATH}.war
-                    
-                    # Try to copy directly first
-                    if [ -w "${TOMCAT_WEBAPPS}" ]; then
-                        cp /tmp/deploy/${PROD_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
-                        echo "Direct copy successful"
-                    else
-                        # If direct copy fails, try using sudo
-                        sudo cp /tmp/deploy/${PROD_CONTEXT_PATH}.war ${TOMCAT_WEBAPPS}/
-                        sudo chown tomcat:tomcat ${TOMCAT_WEBAPPS}/${PROD_CONTEXT_PATH}.war
-                        echo "Used sudo to copy"
-                    fi
+                    // Using Tomcat Manager REST API to deploy
+                    sh """
+                    curl -v -u ${TOMCAT_CREDS_USR}:${TOMCAT_CREDS_PSW} \
+                    -T target/${WAR_FILE} \
+                    "http://${TOMCAT_HOST}:${TOMCAT_PORT}/manager/text/deploy?path=/${PROD_CONTEXT_PATH}&update=true"
                     """
-                    
-                    // Make script executable
-                    sh 'chmod +x deploy_main.sh'
-                    
-                    // Execute deployment script
-                    sh './deploy_main.sh'
                     
                     echo "Production application deployed at: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/"
                     sh "sleep 10"
@@ -273,7 +222,6 @@ pipeline {
         }
         always {
             cleanWs()
-            sh "rm -rf /tmp/deploy || true"
         }
     }
 }
