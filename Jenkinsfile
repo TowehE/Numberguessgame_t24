@@ -1,10 +1,9 @@
 pipeline {
     agent any
 
-triggers {
-        githubPush()  // This enables auto-build on push
+    triggers {
+        githubPush()  
     }
-    
     tools {
         maven 'Maven'
         jdk 'JDK8'
@@ -16,6 +15,7 @@ triggers {
         TOMCAT_CREDS = credentials('tomcat-deployer')
         TOMCAT_WEBAPPS = '/home/ec2-user/apache-tomcat-7.0.94/webapps'  // Updated path
         EMAIL_RECIPIENT = 'toweh05@gmail.com'
+        SONAR_TOKEN = credentials('sonarqube-token') // Using your credential ID
     }
     
     stages {
@@ -37,6 +37,20 @@ triggers {
                 
                 sh 'mvn clean package'
                 sh 'mvn test'
+            }
+        }
+        
+        stage('SonarQube Analysis - Dev') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                    mvn sonar:sonar \
+                    -Dsonar.projectKey=${APP_NAME}-dev \
+                    -Dsonar.projectName="${APP_NAME} Dev Branch" \
+                    -Dsonar.host.url=http://54.92.218.160:9000 \
+                    -Dsonar.login=${SONAR_TOKEN}
+                    '''
+                }
             }
         }
         
@@ -97,6 +111,20 @@ triggers {
             }
         }
         
+        stage('SonarQube Analysis - Feature') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                    mvn sonar:sonar \
+                    -Dsonar.projectKey=${APP_NAME}-feature \
+                    -Dsonar.projectName="${APP_NAME} Feature Branch" \
+                    -Dsonar.host.url=http://54.92.218.160:9000 \
+                    -Dsonar.login=${SONAR_TOKEN}
+                    '''
+                }
+            }
+        }
+        
         stage('Deploy Feature') {
             steps {
                 script {
@@ -151,6 +179,20 @@ triggers {
                 
                 sh 'mvn clean package'
                 sh 'mvn test'
+            }
+        }
+        
+        stage('SonarQube Analysis - Main') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                    mvn sonar:sonar \
+                    -Dsonar.projectKey=${APP_NAME} \
+                    -Dsonar.projectName="${APP_NAME} Main Branch" \
+                    -Dsonar.host.url=http://54.92.218.160:9000 \
+                    -Dsonar.login=${SONAR_TOKEN}
+                    '''
+                }
             }
         }
         
@@ -209,10 +251,10 @@ triggers {
                     <li>Dev: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${DEV_CONTEXT_PATH}/</li>
                     <li>Feature: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/</li>
                     <li>Production: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/</li>
-                </ul>""",
+                </ul>
+                <p>SonarQube Analysis: http://54.92.218.160:9000/dashboard?id=${APP_NAME}</p>""",
                 to: "${EMAIL_RECIPIENT}",
                 mimeType: 'text/html'
-              
             )
         }
         failure {
