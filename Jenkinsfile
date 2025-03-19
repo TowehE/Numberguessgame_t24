@@ -74,6 +74,10 @@ pipeline {
                 }
             }
         }
+
+        mvn sonar:sonar \
+  -Dsonar.host.url=http://54.92.218.160:9000 \
+  -Dsonar.login=e27d03229ff28c49c0795ea527636eedd08ce2ee
         
         stage('Build Feature Branch') {
             steps {
