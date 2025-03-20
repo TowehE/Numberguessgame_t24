@@ -16,6 +16,7 @@ pipeline {
         TOMCAT_WEBAPPS = '/home/ec2-user/apache-tomcat-7.0.94/webapps'
         EMAIL_RECIPIENT = 'toweh05@gmail.com'
         SONAR_TOKEN = credentials('sonarqube-token')
+        MAVEN_OPTS = "--add-opens java.base/java.lang=ALL-UNNAMED"
     }
     
     stages {
@@ -48,7 +49,8 @@ pipeline {
                     -Dsonar.projectKey=${APP_NAME}-dev \
                     -Dsonar.projectName="${APP_NAME} Dev Branch" \
                     -Dsonar.host.url=http://54.92.213.222:9000 \
-                    -Dsonar.login=${SONAR_TOKEN}
+                    -Dsonar.login=${SONAR_TOKEN} \
+                    -Djava.awt.headless=true
                     '''
                 }
             }
@@ -102,7 +104,8 @@ pipeline {
                     -Dsonar.projectKey=${APP_NAME}-feature \
                     -Dsonar.projectName="${APP_NAME} Feature Branch" \
                     -Dsonar.host.url=http://54.92.218.160:9000 \
-                    -Dsonar.login=${SONAR_TOKEN}
+                    -Dsonar.login=${SONAR_TOKEN} \
+                    -Djava.awt.headless=true
                     '''
                 }
             }
@@ -156,7 +159,8 @@ pipeline {
                     -Dsonar.projectKey=${APP_NAME} \
                     -Dsonar.projectName="${APP_NAME} Main Branch" \
                     -Dsonar.host.url=http://54.92.218.160:9000 \
-                    -Dsonar.login=${SONAR_TOKEN}
+                    -Dsonar.login=${SONAR_TOKEN} \
+                    -Djava.awt.headless=true
                     '''
                 }
             }
