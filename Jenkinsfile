@@ -103,7 +103,7 @@ pipeline {
                     mvn sonar:sonar \
                     -Dsonar.projectKey=${APP_NAME}-feature \
                     -Dsonar.projectName="${APP_NAME} Feature Branch" \
-                    -Dsonar.host.url=http://54.92.218.160:9000 \
+                    -Dsonar.host.url=http://54.92.213.222:9000 \
                     -Dsonar.login=${SONAR_TOKEN} \
                     -Djava.awt.headless=true
                     '''
@@ -158,7 +158,7 @@ pipeline {
                     mvn sonar:sonar \
                     -Dsonar.projectKey=${APP_NAME} \
                     -Dsonar.projectName="${APP_NAME} Main Branch" \
-                    -Dsonar.host.url=http://54.92.218.160:9000 \
+                    -Dsonar.host.url=http://54.92.213.222:9000 \
                     -Dsonar.login=${SONAR_TOKEN} \
                     -Djava.awt.headless=true
                     '''
@@ -205,7 +205,7 @@ pipeline {
                     <li>Feature: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${FEATURE_CONTEXT_PATH}/</li>
                     <li>Production: http://${TOMCAT_HOST}:${TOMCAT_PORT}/${PROD_CONTEXT_PATH}/</li>
                 </ul>
-                <p>SonarQube Analysis: http://54.92.218.160:9000/dashboard?id=${APP_NAME}</p>""",
+                <p>SonarQube Analysis: http://54.92.213.222:9000/dashboard?id=${APP_NAME}</p>""",
                 to: "${EMAIL_RECIPIENT}",
                 mimeType: 'text/html'
             )
