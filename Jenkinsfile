@@ -47,7 +47,7 @@ pipeline {
                     mvn sonar:sonar \
                     -Dsonar.projectKey=${APP_NAME}-dev \
                     -Dsonar.projectName="${APP_NAME} Dev Branch" \
-                    -Dsonar.host.url=http://54.92.213.222:9000 \ 
+                    -Dsonar.host.url=http://54.92.213.222:9000 \
                     -Dsonar.login=${SONAR_TOKEN}
                     '''
                 }
